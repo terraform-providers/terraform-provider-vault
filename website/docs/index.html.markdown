@@ -149,6 +149,11 @@ variables in order to keep credential information out of the configuration.
 * `namespace` - (Optional) Set the namespace to use. May be set via the
   `VAULT_NAMESPACE` environment variable. *Available only for Vault Enterprise*.
 
+* `use_child_token` - (Optional) Set this to `false` to disable child token
+  creation. This is necessary to generate periodic `vault_token` resources which
+  may live for an infinite duration of time. May be set via the `VAULT_USE_CHILD_TOKEN`
+  environment variable.
+
 The `auth_login` configuration block accepts the following arguments:
 
 * `path` - (Required) The login path of the auth backend. For example, login with

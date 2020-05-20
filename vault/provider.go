@@ -157,6 +157,12 @@ func Provider() terraform.ResourceProvider {
 				DefaultFunc: schema.EnvDefaultFunc("VAULT_NAMESPACE", ""),
 				Description: "The namespace to use. Available only for Vault Enterprise",
 			},
+			"use_child_token": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("VAULT_USE_CHILD_TOKEN", true),
+				Description: "Set this to false only for skipping the creation of a child token.",
+			},
 		},
 		ConfigureFunc:  providerConfigure,
 		DataSourcesMap: dataSourcesMap,
@@ -706,24 +712,27 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		}
 	}
 
-	renewable := false
-	childTokenLease, err := client.Auth().Token().Create(&api.TokenCreateRequest{
-		DisplayName:    tokenName,
-		TTL:            fmt.Sprintf("%ds", d.Get("max_lease_ttl_seconds").(int)),
-		ExplicitMaxTTL: fmt.Sprintf("%ds", d.Get("max_lease_ttl_seconds").(int)),
-		Renewable:      &renewable,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create limited child token: %s", err)
+	useChildToken := d.Get("use_child_token").(bool)
+	if useChildToken == true {
+		renewable := false
+		childTokenLease, err := client.Auth().Token().Create(&api.TokenCreateRequest{
+			DisplayName:    tokenName,
+			TTL:            fmt.Sprintf("%ds", d.Get("max_lease_ttl_seconds").(int)),
+			ExplicitMaxTTL: fmt.Sprintf("%ds", d.Get("max_lease_ttl_seconds").(int)),
+			Renewable:      &renewable,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to create limited child token: %s", err)
+		}
+
+		childToken := childTokenLease.Auth.ClientToken
+		policies := childTokenLease.Auth.Policies
+
+		log.Printf("[INFO] Using Vault token with the following policies: %s", strings.Join(policies, ", "))
+
+		// Set tht token to the generated child token
+		client.SetToken(childToken)
 	}
-
-	childToken := childTokenLease.Auth.ClientToken
-	policies := childTokenLease.Auth.Policies
-
-	log.Printf("[INFO] Using Vault token with the following policies: %s", strings.Join(policies, ", "))
-
-	// Set tht token to the generated child token
-	client.SetToken(childToken)
 
 	// Set the namespace to the requested namespace, if provided
 	namespace := d.Get("namespace").(string)
