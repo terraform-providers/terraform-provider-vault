@@ -2,7 +2,6 @@ package vault
 
 import (
 	"fmt"
-	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
@@ -55,12 +54,14 @@ func testAccCheckAuthBackendDestroy(s *terraform.State) error {
 func testResourceAuth_initialConfig(path string) string {
 	return fmt.Sprintf(`
 resource "vault_auth_backend" "test" {
-	type = "github"
-	path = "%s"
+	type        = "github"
+	path        = "%s"
 	description = "Test auth backend"
-	default_lease_ttl_seconds = 3600
-	max_lease_ttl_seconds = 86400
-	listing_visibility = "unauth"
+	tune {
+		default_lease_ttl  = "3600s"
+		max_lease_ttl      = "86400s"
+		listing_visibility = "unauth"
+	}
 	local = true
 }`, path)
 }
@@ -95,15 +96,15 @@ func testResourceAuth_initialCheck(expectedPath string) resource.TestCheckFunc {
 			return fmt.Errorf("unexpected auth description")
 		}
 
-		if instanceState.Attributes["default_lease_ttl_seconds"] != "3600" {
-			return fmt.Errorf("unexpected auth default_lease_ttl_seconds")
+		if v := instanceState.Attributes["tune.3452467105.default_lease_ttl"]; v != "3600s" {
+			return fmt.Errorf("unexpected auth default_lease_ttl, got %s", v)
 		}
 
-		if instanceState.Attributes["max_lease_ttl_seconds"] != "86400" {
-			return fmt.Errorf("unexpected auth max_lease_ttl_seconds")
+		if instanceState.Attributes["tune.3452467105.max_lease_ttl"] != "86400s" {
+			return fmt.Errorf("unexpected auth max_lease_ttl")
 		}
 
-		if instanceState.Attributes["listing_visibility"] != "unauth" {
+		if instanceState.Attributes["tune.3452467105.listing_visibility"] != "unauth" {
 			return fmt.Errorf("unexpected auth listing_visibility")
 		}
 
@@ -237,10 +238,10 @@ func TestResourceAuthTune(t *testing.T) {
 					resource.TestCheckResourceAttr(resName, "path", backend),
 					resource.TestCheckResourceAttr(resName, "id", backend),
 					resource.TestCheckResourceAttr(resName, "type", "github"),
-					resource.TestCheckResourceAttr(resName, "tune.1501804413.default_lease_ttl", "60s"),
-					resource.TestCheckResourceAttr(resName, "tune.1501804413.max_lease_ttl", "7200s"),
-					resource.TestCheckResourceAttr(resName, "tune.1501804413.listing_visibility", ""),
-					checkAuthMount(backend, listingVisibility("unauth")),
+					resource.TestCheckResourceAttr(resName, "tune.966249371.default_lease_ttl", "60s"),
+					resource.TestCheckResourceAttr(resName, "tune.966249371.max_lease_ttl", "7200s"),
+					resource.TestCheckResourceAttr(resName, "tune.966249371.listing_visibility", "hidden"),
+					checkAuthMount(backend, listingVisibility("hidden")),
 					checkAuthMount(backend, defaultLeaseTtl(60)),
 					checkAuthMount(backend, maxLeaseTtl(7200)),
 				),
@@ -274,24 +275,10 @@ resource "vault_auth_backend" "test" {
 }`, backend)
 }
 
-func TestResourceAuthTuneTtlConflict(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		Providers: testProviders,
-		PreCheck:  func() { testAccPreCheck(t) },
-		Steps: []resource.TestStep{
-			{
-				ExpectError: regexp.MustCompile(`config is invalid: "max_lease_ttl_seconds": conflicts with tune.0.max_lease_ttl`),
-				Config:      testResourceAuthTune_conflictWithTuneConfig(),
-			},
-		},
-	})
-}
-
 func testResourceAuthTune_conflictWithTuneConfig() string {
 	return `
 resource "vault_auth_backend" "test" {
 	type = "github"
-	max_lease_ttl_seconds = "4800"
 	tune {
 		max_lease_ttl      = "7200s"
 		default_lease_ttl  = "60s"
@@ -314,8 +301,6 @@ func TestResourceAuthMigrateToTune(t *testing.T) {
 					resource.TestCheckResourceAttr(resName, "path", backend),
 					resource.TestCheckResourceAttr(resName, "id", backend),
 					resource.TestCheckResourceAttr(resName, "type", "github"),
-					resource.TestCheckResourceAttr(resName, "max_lease_ttl_seconds", "4800"),
-					resource.TestCheckResourceAttr(resName, "default_lease_ttl_seconds", "75"),
 					resource.TestCheckResourceAttrPtr(resName, "accessor", &resAuthFirst.Accessor),
 					checkAuthMount(backend, defaultLeaseTtl(75)),
 					checkAuthMount(backend, maxLeaseTtl(4800)),
@@ -328,8 +313,8 @@ func TestResourceAuthMigrateToTune(t *testing.T) {
 					resource.TestCheckResourceAttr(resName, "path", backend),
 					resource.TestCheckResourceAttr(resName, "id", backend),
 					resource.TestCheckResourceAttr(resName, "type", "github"),
-					resource.TestCheckResourceAttr(resName, "tune.4062844355.max_lease_ttl", "5600s"),
-					resource.TestCheckResourceAttr(resName, "tune.4062844355.default_lease_ttl", "90s"),
+					resource.TestCheckResourceAttr(resName, "tune.2271853193.max_lease_ttl", "5600s"),
+					resource.TestCheckResourceAttr(resName, "tune.2271853193.default_lease_ttl", "90s"),
 					checkAuthMount(backend, defaultLeaseTtl(90)),
 					checkAuthMount(backend, maxLeaseTtl(5600)),
 				),
@@ -343,8 +328,10 @@ func testResourceAuthMigrateToTune_initialConfig(backend string) string {
 resource "vault_auth_backend" "test" {
 	type = "github"
 	path = "%s"
-	max_lease_ttl_seconds = "4800"
-    default_lease_ttl_seconds = "75"
+	tune {
+		max_lease_ttl     = "4800s"
+		default_lease_ttl = "75s"
+	}
 }`, backend)
 }
 

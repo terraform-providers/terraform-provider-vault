@@ -23,7 +23,7 @@ import (
 //   somewhere.
 //
 // - Run the following to start the Vault server in development mode:
-//       vault server -dev
+//       vault server -dev -dev-root-token-id=test
 //
 // - Take the "Root Token" value printed by Vault as the server started
 //   up and set it as the value of the VAULT_TOKEN environment variable
@@ -33,9 +33,10 @@ import (
 // - As directed by the Vault server output, set the VAULT_ADDR environment
 //   variable. e.g.:
 //       export VAULT_ADDR='http://127.0.0.1:8200'
+//       export VAULT_TOKEN=test
 //
 // - Run the Terraform acceptance tests as usual:
-//       make testacc TEST=./builtin/providers/vault
+//       make testacc TEST=./vault
 //
 // The tests expect to be run in a fresh, empty Vault and thus do not attempt
 // to randomize or otherwise make the generated resource paths unique on

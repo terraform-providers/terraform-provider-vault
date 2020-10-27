@@ -48,6 +48,7 @@ func authMountTuneSchema() *schema.Schema {
 					Optional:     true,
 					Description:  "Specifies whether to show this mount in the UI-specific listing endpoint. Valid values are \"unauth\" or \"hidden\". If not set, behaves like \"hidden\".",
 					ValidateFunc: validation.StringInSlice([]string{"unauth", "hidden"}, false),
+					Default:      "hidden",
 				},
 				"passthrough_request_headers": {
 					Type:        schema.TypeList,

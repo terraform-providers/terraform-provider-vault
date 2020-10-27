@@ -30,7 +30,12 @@ func expandAuthMethodTune(rawL []interface{}) api.MountConfigInput {
 		data.AuditNonHMACResponseKeys = expandStringSliceWithEmpty(v.([]interface{}), true)
 	}
 	if v, ok := raw["listing_visibility"]; ok {
-		data.ListingVisibility = v.(string)
+		s := v.(string)
+		if s == "" {
+			s = "hidden"
+		}
+
+		data.ListingVisibility = s
 	}
 	if v, ok := raw["passthrough_request_headers"]; ok {
 		data.PassthroughRequestHeaders = expandStringSliceWithEmpty(v.([]interface{}), true)

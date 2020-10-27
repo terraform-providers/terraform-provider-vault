@@ -17,9 +17,11 @@ func AuthBackendResource() *schema.Resource {
 		Delete: authBackendDelete,
 		Read:   authBackendRead,
 		Update: authBackendUpdate,
+
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+
 		MigrateState: resourceAuthBackendMigrateState,
 
 		Schema: map[string]*schema.Schema{
@@ -49,38 +51,6 @@ func AuthBackendResource() *schema.Resource {
 				Description: "The description of the auth backend",
 			},
 
-			"default_lease_ttl_seconds": {
-				Type:          schema.TypeInt,
-				Required:      false,
-				Optional:      true,
-				Computed:      true,
-				ForceNew:      true,
-				ConflictsWith: []string{"tune.0.default_lease_ttl"},
-				Deprecated:    "Use the tune configuration block to avoid forcing creation of new resource on an update",
-				Description:   "Default lease duration in seconds",
-			},
-
-			"max_lease_ttl_seconds": {
-				Type:          schema.TypeInt,
-				Required:      false,
-				Optional:      true,
-				Computed:      true,
-				ForceNew:      true,
-				ConflictsWith: []string{"tune.0.max_lease_ttl"},
-				Deprecated:    "Use the tune configuration block to avoid forcing creation of new resource on an update",
-				Description:   "Maximum possible lease duration in seconds",
-			},
-
-			"listing_visibility": {
-				Type:          schema.TypeString,
-				ForceNew:      true,
-				Optional:      true,
-				Computed:      true,
-				ConflictsWith: []string{"tune.0.listing_visibility"},
-				Deprecated:    "Use the tune configuration block to avoid forcing creation of new resource on an update",
-				Description:   "Specifies whether to show this mount in the UI-specific listing endpoint",
-			},
-
 			"local": {
 				Type:        schema.TypeBool,
 				ForceNew:    true,
@@ -108,19 +78,24 @@ func authBackendWrite(d *schema.ResourceData, meta interface{}) error {
 	options := &api.EnableAuthOptions{
 		Type:        mountType,
 		Description: d.Get("description").(string),
-		Config: api.AuthConfigInput{
-			DefaultLeaseTTL:   fmt.Sprintf("%ds", d.Get("default_lease_ttl_seconds")),
-			MaxLeaseTTL:       fmt.Sprintf("%ds", d.Get("max_lease_ttl_seconds")),
-			ListingVisibility: d.Get("listing_visibility").(string),
-		},
-		Local: d.Get("local").(bool),
+		Local:       d.Get("local").(bool),
 	}
 
 	if path == "" {
 		path = mountType
 	}
 
-	log.Printf("[DEBUG] Writing auth %q to Vault", path)
+	tunes := d.Get("tune").(*schema.Set)
+	if tunes.Len() > 0 {
+		tune := tunes.List()[0].(map[string]interface{})
+
+		options.Config = api.AuthConfigInput{
+			DefaultLeaseTTL:   tune["default_lease_ttl"].(string),
+			MaxLeaseTTL:       tune["max_lease_ttl"].(string),
+			ListingVisibility: tune["listing_visibility"].(string),
+		}
+
+	}
 
 	if err := client.Sys().EnableAuthWithOptions(path, options); err != nil {
 		return fmt.Errorf("error writing to Vault: %s", err)
@@ -128,7 +103,7 @@ func authBackendWrite(d *schema.ResourceData, meta interface{}) error {
 
 	d.SetId(path)
 
-	return authBackendUpdate(d, meta)
+	return authBackendRead(d, meta)
 }
 
 func authBackendDelete(d *schema.ResourceData, meta interface{}) error {
@@ -162,11 +137,29 @@ func authBackendRead(d *schema.ResourceData, meta interface{}) error {
 			d.Set("type", auth.Type)
 			d.Set("path", path)
 			d.Set("description", auth.Description)
-			d.Set("default_lease_ttl_seconds", auth.Config.DefaultLeaseTTL)
-			d.Set("max_lease_ttl_seconds", auth.Config.MaxLeaseTTL)
-			d.Set("listing_visibility", auth.Config.ListingVisibility)
 			d.Set("local", auth.Local)
 			d.Set("accessor", auth.Accessor)
+
+			tunes := d.Get("tune").(*schema.Set)
+			var tune map[string]interface{}
+			if tunes.Len() > 0 {
+				t := tunes.List()[0]
+				tunes.Remove(t)
+
+				tune = t.(map[string]interface{})
+			} else {
+				tune = make(map[string]interface{})
+			}
+
+			tune["default_lease_ttl"] = fmt.Sprintf("%ds", auth.Config.DefaultLeaseTTL)
+			tune["max_lease_ttl"] = fmt.Sprintf("%ds", auth.Config.MaxLeaseTTL)
+			tune["listing_visibility"] = auth.Config.ListingVisibility
+
+			tunes.Add(tune)
+			if err := d.Set("tune", tunes); err != nil {
+				return err
+			}
+
 			return nil
 		}
 	}
@@ -188,9 +181,8 @@ func authBackendUpdate(d *schema.ResourceData, meta interface{}) error {
 			backendType := d.Get("type")
 			log.Printf("[DEBUG] Writing %s auth tune to '%q'", backendType, path)
 
-			err := authMountTune(client, "auth/"+path, raw)
-			if err != nil {
-				return nil
+			if err := authMountTune(client, "auth/"+path, raw); err != nil {
+				return err
 			}
 
 			log.Printf("[INFO] Written %s auth tune to '%q'", backendType, path)
