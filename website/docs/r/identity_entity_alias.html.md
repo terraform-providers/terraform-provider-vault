@@ -41,3 +41,11 @@ The following arguments are supported:
 ## Attributes Reference
 
 * `id` - ID of the entity alias.
+
+## Import
+
+Identity entity aliases can be imported using the `id` of the alias, e.g.
+
+```
+$ terraform import vault_identity_entity_alias.test 34982d3d-e3ce-5d8b-6e5f-b9bb34246c31
+```

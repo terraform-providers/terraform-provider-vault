@@ -49,8 +49,8 @@ The following arguments are supported:
 
 ## Import
 
-Identity entity can be imported using the `id`, e.g.
+Identity entities can be imported using the `id` of the entity, e.g.
 
 ```
-$ terraform import vault_identity_entity.test "ae6f8ued-0f1a-9f6b-2915-1a2be20dc053"
+$ terraform import vault_identity_entity.test 8d6a45e5-572f-8f13-d226-cd0d1ec57297
 ```

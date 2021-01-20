@@ -48,3 +48,11 @@ The following arguments are supported:
 In addition to all arguments above, the following attributes are exported:
 
 * `id` - The `id` of the created group alias.
+
+## Import
+
+Identity group aliases can be imported using the `id` of the alias, e.g.
+
+```
+$ terraform import vault_identity_group_alias.group-alias ca726050-d8ac-6f1f-4210-3b5c5b613824
+```
