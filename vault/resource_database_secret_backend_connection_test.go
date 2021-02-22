@@ -564,7 +564,6 @@ func TestAccDatabaseSecretBackendConnection_snowflake(t *testing.T) {
 			},
 		},
 	})
-	fmt.Println("hellow")
 }
 
 func testAccDatabaseSecretBackendConnectionCheckDestroy(s *terraform.State) error {
