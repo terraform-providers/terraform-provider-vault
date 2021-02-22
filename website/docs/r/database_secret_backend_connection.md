@@ -79,6 +79,8 @@ The following arguments are supported:
 
 * `elasticsearch` - (Optional) A nested block containing configuration options for Elasticsearch connections.
 
+* `snowflake` - (Optional) A nested block containing configuration options for Snowflake connections.
+
 Exactly one of the nested blocks of configuration options must be supplied.
 
 ### Cassandra Configuration Options
@@ -212,6 +214,24 @@ Exactly one of the nested blocks of configuration options must be supplied.
 * `username` - (Required) The username to be used in the connection.
 
 * `password` - (Required) The password to be used in the connection.
+
+### Snowflake Configuration Options
+
+*  `account` - (Required) The Snowflake account name. Format: <accountname> if in us-west-2, or <accountname>.<region> for any other region.
+
+* `username` - (Required) The username to be used in the connection (the account admin level).
+
+* `password` - (Required) The password to be used in the connection.
+
+* `database` - (Optional) The database name to restrict this connection to in snowflake.
+
+* `schema` - (Optional) The schema name to restrict this connection to in snowflake.
+
+* `warehouse` - (Optional) The warehouse name to restrict this connection to in snowflake.
+
+* `host` - (Optional) Override the default host for snowflake connections (default: snowflakecomputing.com).
+
+* `port` - (Optional) Override the default port for snowflake connections (default: 443).
 
 ## Attributes Reference
 

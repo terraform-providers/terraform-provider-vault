@@ -397,7 +397,11 @@ go.opencensus.io/trace
 go.opencensus.io/trace/internal
 go.opencensus.io/trace/propagation
 go.opencensus.io/trace/tracestate
+<<<<<<< HEAD
 # golang.org/x/crypto v0.0.0-20200604202706-70a84ac30bf9
+=======
+# golang.org/x/crypto v0.0.0-20200510223506-06a226fb4e37
+>>>>>>> d3014719... Enable Snowflake as a Database Resource
 golang.org/x/crypto/bcrypt
 golang.org/x/crypto/blake2b
 golang.org/x/crypto/blowfish
@@ -421,7 +425,11 @@ golang.org/x/crypto/pkcs12/internal/rc2
 golang.org/x/crypto/poly1305
 golang.org/x/crypto/ssh
 golang.org/x/crypto/ssh/internal/bcrypt_pbkdf
+<<<<<<< HEAD
 # golang.org/x/net v0.0.0-20200602114024-627f9648deb9
+=======
+# golang.org/x/net v0.0.0-20200301022130-244492dfa37a
+>>>>>>> d3014719... Enable Snowflake as a Database Resource
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
 golang.org/x/net/http/httpguts
