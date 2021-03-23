@@ -156,7 +156,19 @@ func identityGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	if err != nil {
 		return fmt.Errorf("error writing IdentityGroup to %q: %s", name, err)
 	}
-	log.Printf("[DEBUG] Wrote IdentityGroup %q", resp.Data["name"])
+
+	if resp == nil {
+		path := identityGroupNamePath(name)
+		groupMsg := "Unable to determine group id."
+
+		if group, err := client.Logical().Read(path); err == nil {
+			groupMsg = fmt.Sprintf("Group resource ID %q may be imported.", group.Data["id"])
+		}
+
+		return fmt.Errorf("Identity Group %q already exists. %s", name, groupMsg)
+	} else {
+		log.Printf("[DEBUG] Wrote IdentityGroup %q", resp.Data["name"])
+	}
 
 	d.SetId(resp.Data["id"].(string))
 
@@ -255,6 +267,10 @@ func identityGroupExists(d *schema.ResourceData, meta interface{}) (bool, error)
 	}
 	log.Printf("[DEBUG] Checked if IdentityGroup %q exists", key)
 	return resp != nil, nil
+}
+
+func identityGroupNamePath(name string) string {
+	return fmt.Sprintf("%s/name/%s", identityGroupPath, name)
 }
 
 func identityGroupIDPath(id string) string {
