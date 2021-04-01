@@ -26,7 +26,7 @@ func JsonDiffSuppress(k, old, new string, d *schema.ResourceData) bool {
 	err = json.Unmarshal([]byte(new), &newJSON)
 	if err != nil {
 		log.Printf("[ERROR] Version of %q in config is not valid JSON: %s", k, err)
-		return true
+		return false
 	}
 	return reflect.DeepEqual(oldJSON, newJSON)
 }
