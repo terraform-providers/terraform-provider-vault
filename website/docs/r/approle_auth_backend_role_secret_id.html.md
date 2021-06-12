@@ -20,9 +20,9 @@ resource "vault_auth_backend" "approle" {
 }
 
 resource "vault_approle_auth_backend_role" "example" {
-  backend   = "${vault_auth_backend.approle.path}"
-  role_name = "test-role"
-  policies  = ["default", "dev", "prod"]
+  backend         = "${vault_auth_backend.approle.path}"
+  role_name       = "test-role"
+  token_policies  = ["default", "dev", "prod"]
 }
 
 resource "vault_approle_auth_backend_role_secret_id" "id" {
