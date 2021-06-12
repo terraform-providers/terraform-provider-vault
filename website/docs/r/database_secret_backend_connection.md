@@ -112,6 +112,10 @@ Exactly one of the nested blocks of configuration options must be supplied.
   docs](https://www.vaultproject.io/api-docs/secret/databases/mongodb.html#sample-payload)
   for an example.
 
+* `tls_ca` - (Optional) A x509 CA file for validating the certificate presented by the MongoDB server. Must be PEM encoded.
+
+* `tls_certificate_key` - (Optional) A x509 certificate for conneting to the database. This must be a PEM encoded version of the private key and certificate combined.
+
 ### SAP HanaDB Configuration Options
 
 * `connection_url` - (Required) A URL containing connection information. See

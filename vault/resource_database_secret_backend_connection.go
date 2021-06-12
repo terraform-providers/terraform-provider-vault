@@ -168,10 +168,55 @@ func databaseSecretBackendConnectionResource() *schema.Resource {
 			},
 
 			"mongodb": {
-				Type:          schema.TypeList,
-				Optional:      true,
-				Description:   "Connection parameters for the mongodb-database-plugin plugin.",
-				Elem:          connectionStringResource(),
+				Type:        schema.TypeList,
+				Optional:    true,
+				Description: "Connection parameters for the mongodb-database-plugin plugin.",
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"username": {
+							Type:        schema.TypeString,
+							Optional:    true,
+							Description: "The username to use when authenticating with Cassandra.",
+						},
+						"password": {
+							Type:        schema.TypeString,
+							Optional:    true,
+							Description: "The password to use when authenticating with Cassandra.",
+							Sensitive:   true,
+						},
+						"connection_url": {
+							Type:        schema.TypeString,
+							Optional:    true,
+							Description: "Connection string to use to connecto to the database.",
+						},
+						"max_open_connections": {
+							Type:        schema.TypeInt,
+							Optional:    true,
+							Description: "Maximum number of open connections to the database.",
+							Default:     2,
+						},
+						"max_idle_connections": {
+							Type:        schema.TypeInt,
+							Optional:    true,
+							Description: "Maximum number of idle connections to the database.",
+						},
+						"max_connection_lifetime": {
+							Type:        schema.TypeInt,
+							Optional:    true,
+							Description: "Maximum number of seconds a connection may be reused.",
+						},
+						"tls_ca": {
+							Type:        schema.TypeString,
+							Optional:    true,
+							Description: "x509 CA file for validating the certificate presented by the MongoDB server (PEM encoded).",
+						},
+						"tls_cerificate_key": {
+							Type:        schema.TypeString,
+							Optional:    true,
+							Description: "x509 certificate for connecting to the database (PEM encoded).",
+						},
+					},
+				},
 				MaxItems:      1,
 				ConflictsWith: util.CalculateConflictsWith("mongodb", dbBackendTypes),
 			},
@@ -310,6 +355,17 @@ func connectionStringResource() *schema.Resource {
 				Type:        schema.TypeInt,
 				Optional:    true,
 				Description: "Maximum number of seconds a connection may be reused.",
+			},
+			"password": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "The password to use when authenticating with Cassandra.",
+				Sensitive:   true,
+			},
+			"username": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "The username to use when authenticating with Cassandra.",
 			},
 		},
 	}
@@ -468,6 +524,21 @@ func getConnectionDetailsFromResponse(d *schema.ResourceData, prefix string, res
 			result["max_connection_lifetime"] = n.Seconds()
 		}
 	}
+	if v, ok := data["tls_ca"]; ok {
+		result["tls_ca"] = v.(string)
+	}
+	if v, ok := data["tls_certificate_key"]; ok {
+		result["tls_certificate_key"] = v.(string)
+	}
+	if v, ok := data["password"]; ok {
+		result["password"] = v.(string)
+	} else if v, ok := d.GetOk(prefix + "password"); ok {
+		// keep the password we have in state/config if the API doesn't return one
+		result["password"] = v.(string)
+	}
+	if v, ok := data["username"]; ok {
+		result["username"] = v.(string)
+	}
 	return []map[string]interface{}{result}
 }
 
@@ -511,6 +582,18 @@ func setDatabaseConnectionData(d *schema.ResourceData, prefix string, data map[s
 	}
 	if v, ok := d.GetOkExists(prefix + "max_connection_lifetime"); ok {
 		data["max_connection_lifetime"] = fmt.Sprintf("%ds", v)
+	}
+	if v, ok := d.GetOk(prefix + "tls_ca"); ok {
+		data["tls_ca"] = v.(string)
+	}
+	if v, ok := d.GetOk(prefix + "tls_certificate_key"); ok {
+		data["tls_certificate_key"] = v.(string)
+	}
+	if v, ok := d.GetOk(prefix + "password"); ok {
+		data["password"] = v.(string)
+	}
+	if v, ok := d.GetOk(prefix + "username"); ok {
+		data["username"] = v.(string)
 	}
 }
 
