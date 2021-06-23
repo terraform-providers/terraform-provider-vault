@@ -22,5 +22,4 @@ require (
 	github.com/hashicorp/vault/sdk v0.1.14-0.20210526173046-412db2245e81
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/rainycape/unidecode v0.0.0-20150907023854-cb7f23ec59be // indirect
-	golang.org/x/crypto v0.0.0-20200510223506-06a226fb4e37 // indirect
 )
