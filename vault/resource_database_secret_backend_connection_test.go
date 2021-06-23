@@ -529,6 +529,9 @@ func TestAccDatabaseSecretBackendConnection_snowflake(t *testing.T) {
 	host := os.Getenv("SNOWFLAKE_HOST")
 	port := os.Getenv("SNOWFLAKE_PORT")
 	account := os.Getenv("SNOWFLAKE_ACCOUNT")
+	if account == "" {
+		t.Skip("SNOWFLAKE_ACCOUNT not set")
+	}
 	username := os.Getenv("SNOWFLAKE_USERNAME")
 	password := os.Getenv("SNOWFLAKE_PASSWORD")
 	db := os.Getenv("SNOWFLAKE_DB")
