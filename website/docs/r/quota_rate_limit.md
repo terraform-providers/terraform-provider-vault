@@ -41,6 +41,11 @@ The following arguments are supported:
 * `rate` - (Required) The maximum number of requests at any given second to be allowed by the quota
   rule. The `rate` must be positive.
 
+* `interval` - (Optional) The duration to enforce rate limiting for (default "1s").
+
+* `block_interval` - (Optional) If set, when a client reaches a rate limit threshold, the client will
+  be prohibited from any further requests until after the 'block_interval' has elapsed.
+
 ## Attributes Reference
 
 No additional attributes are exported by this resource.

@@ -3,9 +3,11 @@ package vault
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-provider-vault/util"
 	"github.com/hashicorp/vault/api"
 )
 
@@ -43,6 +45,21 @@ func quotaRateLimitResource() *schema.Resource {
 				Description:  "The maximum number of requests at any given second to be allowed by the quota rule. The rate must be positive.",
 				ValidateFunc: validation.FloatAtLeast(0.0),
 			},
+			"interval": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Description:  "The duration to enforce rate limiting for (default \"1s\").",
+				StateFunc:    durationSecond,
+				ValidateFunc: validateDurationSecond,
+				Default:      "1s",
+			},
+			"block_interval": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Description:  "If set, when a client reaches a rate limit threshold, the client will be prohibited from any further requests until after the 'block_interval' has elapsed.",
+				StateFunc:    durationSecond,
+				ValidateFunc: validateDurationSecond,
+			},
 		},
 	}
 }
@@ -59,6 +76,14 @@ func quotaRateLimitCreate(d *schema.ResourceData, meta interface{}) error {
 	data := map[string]interface{}{}
 	data["path"] = d.Get("path").(string)
 	data["rate"] = d.Get("rate").(float64)
+
+	if intervalRaw, ok := d.GetOk("interval"); ok {
+		data["interval"] = intervalRaw.(string)
+	}
+
+	if blockIntervalRaw, ok := d.GetOk("block_interval"); ok {
+		data["block_interval"] = blockIntervalRaw.(string)
+	}
 
 	_, err := client.Logical().Write(path, data)
 	if err != nil {
@@ -88,7 +113,7 @@ func quotaRateLimitRead(d *schema.ResourceData, meta interface{}) error {
 		return nil
 	}
 
-	for _, k := range []string{"path", "rate"} {
+	for _, k := range []string{"path", "rate", "interval", "block_interval"} {
 		v, ok := resp.Data[k]
 		if ok {
 			if err := d.Set(k, v); err != nil {
@@ -111,6 +136,14 @@ func quotaRateLimitUpdate(d *schema.ResourceData, meta interface{}) error {
 	data := map[string]interface{}{}
 	data["path"] = d.Get("path").(string)
 	data["rate"] = d.Get("rate").(float64)
+
+	if intervalRaw, ok := d.GetOk("interval"); ok {
+		data["interval"] = intervalRaw.(string)
+	}
+
+	if blockIntervalRaw, ok := d.GetOk("block_interval"); ok {
+		data["block_interval"] = blockIntervalRaw.(string)
+	}
 
 	_, err := client.Logical().Write(path, data)
 	if err != nil {
@@ -153,4 +186,16 @@ func quotaRateLimitExists(d *schema.ResourceData, meta interface{}) (bool, error
 
 	log.Printf("[DEBUG] Checked if Resource Rate Limit Quota %s exists", name)
 	return secret != nil, nil
+}
+
+func validateDurationSecond(i interface{}, k string) (s []string, es []error) {
+	if _, err := util.ParseDurationSecond(i); err != nil {
+		es = append(es, fmt.Errorf("expected '%s' to be a valid duration second", k))
+	}
+	return
+}
+
+func durationSecond(i interface{}) string {
+	d, _ := util.ParseDurationSecond(i)
+	return fmt.Sprint(d.Truncate(time.Second).Seconds())
 }

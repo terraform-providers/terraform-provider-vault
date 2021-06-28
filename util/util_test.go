@@ -5,6 +5,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"reflect"
 	"testing"
+	"time"
 )
 
 type testingStruct struct {
@@ -250,6 +251,43 @@ func TestPathParameters(t *testing.T) {
 			}
 			if !reflect.DeepEqual(result, testCase.expected) {
 				t.Fatalf("expected %+v but received %+v", testCase.expected, result)
+			}
+		})
+	}
+}
+
+func TestParseDurationSecond(t *testing.T) {
+	tests := map[string]struct {
+		in      interface{}
+		want    time.Duration
+		wantErr bool
+	}{
+		"valid duration": {
+			in:   "1m",
+			want: 60 * time.Second,
+		},
+		"valid string number": {
+			in:   "2",
+			want: 2 * time.Second,
+		},
+		"empty string": {
+			in:   "",
+			want: time.Duration(0),
+		},
+		"invalid input": {
+			in:      "foobar",
+			wantErr: true,
+		},
+	}
+	for tn, tt := range tests {
+		t.Run(tn, func(t *testing.T) {
+			got, err := ParseDurationSecond(tt.in)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ParseDurationSecond() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("ParseDurationSecond() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
