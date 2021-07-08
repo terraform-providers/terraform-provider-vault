@@ -156,6 +156,15 @@ func tokenResource() *schema.Resource {
 				Description: "The client token encrypted using the provided PGP key.",
 				Sensitive:   true,
 			},
+			"metadata": {
+				Type:        schema.TypeMap,
+				Optional:    true,
+				ForceNew:    true,
+				Description: "Metadata to be associated with the token.",
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
 		},
 	}
 }
@@ -210,6 +219,10 @@ func tokenCreate(d *schema.ResourceData, meta interface{}) error {
 	if v, ok := d.GetOk("renewable"); ok {
 		renewable := v.(bool)
 		createRequest.Renewable = &renewable
+	}
+
+	if v, ok := d.GetOk("metadata"); ok {
+		createRequest.Metadata = v.(map[string]string)
 	}
 
 	if v, ok := d.GetOk("wrapping_ttl"); ok {
@@ -349,6 +362,8 @@ func tokenRead(d *schema.ResourceData, meta interface{}) error {
 		return fmt.Errorf("error parsing expire_time: %s", err)
 	}
 	d.Set("lease_duration", int(expireTime.Sub(issueTime).Seconds()))
+
+	d.Set("metadata", resp.Data["meta"])
 
 	if d.Get("renewable").(bool) && tokenCheckLease(d) {
 		if id == "" {

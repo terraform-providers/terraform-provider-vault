@@ -39,6 +39,10 @@ resource "vault_token" "example" {
   renew_min_lease = 43200
   renew_increment = 86400
 
+  metadata = {
+    "purpose" = "service-account"
+  }
+
   gpg_key = "keybase:my_username"
 }
 ```
@@ -77,6 +81,8 @@ The following arguments are supported:
    The token won't be renewed automatically by the provider and `client_token` will be empty.
    **If you do not set this argument, the `client_token` will be written as plain text in the
    Terraform state.**
+
+* `metadata` - (Optional) Metadata to be set on this token
 
 ## Attributes Reference
 

@@ -111,6 +111,7 @@ func TestResourceToken_full(t *testing.T) {
 					resource.TestCheckResourceAttrSet("vault_token.test", "lease_started"),
 					resource.TestCheckResourceAttrSet("vault_token.test", "client_token"),
 					resource.TestCheckResourceAttr("vault_token.test", "encrypted_client_token", ""),
+					resource.TestCheckResourceAttr("vault_token.test", "metadata.fizz", "buzz"),
 				),
 			},
 		},
@@ -136,6 +137,9 @@ resource "vault_token" "test" {
     display_name = "test"
     num_uses = 1
 	period = 0
+	metadata = {
+		fizz = "buzz"
+	}
 }`
 }
 
