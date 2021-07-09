@@ -62,6 +62,7 @@ func azureAccessCredentialsDataSource() *schema.Resource {
 				Type:        schema.TypeString,
 				Computed:    true,
 				Description: "The client secret for credentials to query the Azure APIs.",
+				Sensitive:   true,
 			},
 			"lease_id": {
 				Type:        schema.TypeString,
