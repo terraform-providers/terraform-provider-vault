@@ -2,9 +2,10 @@ package vault
 
 import (
 	"fmt"
+	"log"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/vault/api"
-	"log"
 )
 
 func adAccessCredentialsDataSource() *schema.Resource {
@@ -26,11 +27,13 @@ func adAccessCredentialsDataSource() *schema.Resource {
 				Type:        schema.TypeString,
 				Computed:    true,
 				Description: "Password for the service account.",
+				Sensitive:   true,
 			},
 			"last_password": {
 				Type:        schema.TypeString,
 				Computed:    true,
 				Description: "Last known password for the service account.",
+				Sensitive:   true,
 			},
 			"username": {
 				Type:        schema.TypeString,

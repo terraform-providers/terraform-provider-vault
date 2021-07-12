@@ -32,6 +32,7 @@ func nomadAccessCredentialsDataSource() *schema.Resource {
 				Type:        schema.TypeString,
 				Computed:    true,
 				Description: "Used to make requests to Nomad and should be kept private.",
+				Sensitive:   true,
 			},
 		},
 	}
