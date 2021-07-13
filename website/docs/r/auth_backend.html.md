@@ -28,7 +28,7 @@ The following arguments are supported:
 
 * `type` - (Required) The name of the auth method type
 
-* `path` - (Optional) The path to mount the auth method — this defaults to the name of the type
+* `path` - (Optional) The path to mount the auth method — this defaults to the name of the type. Note that leading slashes will be auto-removed if used.
 
 * `description` - (Optional) A description of the auth method
 

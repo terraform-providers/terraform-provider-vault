@@ -40,6 +40,9 @@ func AuthBackendResource() *schema.Resource {
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return old+"/" == new || new+"/" == old
 				},
+				StateFunc: func(v interface{}) string {
+					return strings.Trim(v.(string), "/")
+				},
 			},
 
 			"description": {
