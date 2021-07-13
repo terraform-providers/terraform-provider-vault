@@ -62,6 +62,10 @@ The following arguments are supported:
   authentication is not able to read the data. Setting this to `true` will
   break drift detection. Defaults to false.
 
+* `delete_all_versions` - (Optional) True/false.  Only applicable for kv-v2 stores.
+  Set this to `true` if you want vault to permanently delete all versions of secret.  By
+  default, only the last secret version will be removed.  Defaults to false. 
+
 ## Required Vault Capabilities
 
 Use of this resource requires the `create` or `update` capability

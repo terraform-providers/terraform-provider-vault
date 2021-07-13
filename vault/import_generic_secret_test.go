@@ -18,9 +18,10 @@ func TestAccGenericSecret_importBasic(t *testing.T) {
 				Check:  testResourceGenericSecret_initialCheck(path),
 			},
 			{
-				ResourceName:      "vault_generic_secret.test",
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            "vault_generic_secret.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"delete_all_versions"},
 			},
 		},
 	})

@@ -61,6 +61,12 @@ func genericSecretResource() *schema.Resource {
 				Description: "Don't attempt to read the token from Vault if true; drift won't be detected.",
 			},
 
+			"delete_all_versions": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     false,
+				Description: "Only applicable for kv-v2 stores.  If set to true, permanently delete all versions of the secret.  If set to false, only the most recent secret version is deleted.",
+			},
 			"data": {
 				Type:        schema.TypeMap,
 				Computed:    true,
@@ -149,7 +155,12 @@ func genericSecretResourceDelete(d *schema.ResourceData, meta interface{}) error
 	}
 
 	if v2 {
-		path = addPrefixToVKVPath(path, mountPath, "data")
+		deleteAllVersions := d.Get("delete_all_versions").(bool)
+		if deleteAllVersions {
+			path = addPrefixToVKVPath(path, mountPath, "metadata")
+		} else {
+			path = addPrefixToVKVPath(path, mountPath, "data")
+		}
 	}
 
 	log.Printf("[DEBUG] Deleting vault_generic_secret from %q", path)
