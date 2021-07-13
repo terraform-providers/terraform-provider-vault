@@ -139,6 +139,19 @@ variables in order to keep credential information out of the configuration.
   that Terraform can be tricked into writing secrets to a server controlled
   by an intruder. May be set via the `VAULT_SKIP_VERIFY` environment variable.
 
+* `create_intermediate_child_token` - (Optional) Set this to `false` to disable
+  creation and use of an intermediate ephemeral Vault token for Terraform to
+  use. This is strongly discouraged in most cases and environments because it
+  can result in the provided Vault token being exposed by Terraform's output.
+  Only change this setting when the provided token cannot be permitted to
+  create child tokens and there is no risk of exposure from the output of
+  Terraform. May be set via the `TERRAFORM_VAULT_CREATE_CHILD_TOKEN`
+  environment variable. **Note**: Setting to `false` will cause `token_name`
+  and `max_lease_ttl_seconds` to be ignored.
+
+  See the section above on *Using Vault credentials in Terraform configuration*
+  for more details on why it is not recommended to disable this setting.
+
 * `max_lease_ttl_seconds` - (Optional) Used as the duration for the
   intermediate Vault token Terraform issues itself, which in turn limits
   the duration of secret leases issued by Vault. Defaults to 20 minutes

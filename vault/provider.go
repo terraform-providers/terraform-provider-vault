@@ -137,6 +137,15 @@ func Provider() *schema.Provider {
 				DefaultFunc: schema.EnvDefaultFunc("VAULT_SKIP_VERIFY", false),
 				Description: "Set this to true only if the target Vault server is an insecure development instance.",
 			},
+			"create_intermediate_child_token": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("TERRAFORM_VAULT_CREATE_CHILD_TOKEN", true),
+
+				// Setting to false will cause max_lease_ttl_seconds and token_name to be ignored (not used).
+				// Note that this is strongly discouraged due to the potential of exposing sensitive secret data.
+				Description: "Set this to false to prevent the creation and use of ephemeral child token used by this provider.",
+			},
 			"max_lease_ttl_seconds": {
 				Type:     schema.TypeInt,
 				Optional: true,
@@ -147,7 +156,7 @@ func Provider() *schema.Provider {
 				// after Terraform has finished running.
 				DefaultFunc: schema.EnvDefaultFunc("TERRAFORM_VAULT_MAX_TTL", 1200),
 
-				Description: "Maximum TTL for secret leases requested by this provider",
+				Description: "Maximum TTL for secret leases requested by this provider.",
 			},
 			"max_retries": {
 				Type:     schema.TypeInt,
@@ -160,7 +169,7 @@ func Provider() *schema.Provider {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("VAULT_NAMESPACE", ""),
-				Description: "The namespace to use. Available only for Vault Enterprise",
+				Description: "The namespace to use. Available only for Vault Enterprise.",
 			},
 			"headers": {
 				Type:        schema.TypeList,
@@ -697,6 +706,62 @@ func providerToken(d *schema.ResourceData) (string, error) {
 	return strings.TrimSpace(token), nil
 }
 
+func providerChildToken(d *schema.ResourceData, c interface{}) error {
+	client := c.(*api.Client)
+
+	tokenName := d.Get("token_name").(string)
+	if tokenName == "" {
+		tokenName = "terraform"
+	}
+
+	// In order to enforce our relatively-short lease TTL, we derive a
+	// temporary child token that inherits all of the policies of the
+	// token we were given but expires after max_lease_ttl_seconds.
+	//
+	// The intent here is that Terraform will need to re-fetch any
+	// secrets on each run and so we limit the exposure risk of secrets
+	// that end up stored in the Terraform state, assuming that they are
+	// credentials that Vault is able to revoke.
+	//
+	// Caution is still required with state files since not all secrets
+	// can explicitly be revoked, and this limited scope won't apply to
+	// any secrets that are *written* by Terraform to Vault.
+
+	// Set the namespace to the token's namespace only for the
+	// child token creation
+	tokenInfo, err := client.Auth().Token().LookupSelf()
+	if err != nil {
+		return err
+	}
+	if tokenNamespaceRaw, ok := tokenInfo.Data["namespace_path"]; ok {
+		tokenNamespace := tokenNamespaceRaw.(string)
+		if tokenNamespace != "" {
+			client.SetNamespace(tokenNamespace)
+		}
+	}
+
+	renewable := false
+	childTokenLease, err := client.Auth().Token().Create(&api.TokenCreateRequest{
+		DisplayName:    tokenName,
+		TTL:            fmt.Sprintf("%ds", d.Get("max_lease_ttl_seconds").(int)),
+		ExplicitMaxTTL: fmt.Sprintf("%ds", d.Get("max_lease_ttl_seconds").(int)),
+		Renewable:      &renewable,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create limited child token: %s", err)
+	}
+
+	childToken := childTokenLease.Auth.ClientToken
+	policies := childTokenLease.Auth.Policies
+
+	log.Printf("[INFO] Using Vault token with the following policies: %s", strings.Join(policies, ", "))
+
+	// Set tht token to the generated child token
+	client.SetToken(childToken)
+
+	return nil
+}
+
 func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	clientConfig := api.DefaultConfig()
 	addr := d.Get("address").(string)
@@ -795,55 +860,13 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		return nil, errors.New("no vault token found")
 	}
 
-	tokenName := d.Get("token_name").(string)
-	if tokenName == "" {
-		tokenName = "terraform"
-	}
-
-	// In order to enforce our relatively-short lease TTL, we derive a
-	// temporary child token that inherits all of the policies of the
-	// token we were given but expires after max_lease_ttl_seconds.
-	//
-	// The intent here is that Terraform will need to re-fetch any
-	// secrets on each run and so we limit the exposure risk of secrets
-	// that end up stored in the Terraform state, assuming that they are
-	// credentials that Vault is able to revoke.
-	//
-	// Caution is still required with state files since not all secrets
-	// can explicitly be revoked, and this limited scope won't apply to
-	// any secrets that are *written* by Terraform to Vault.
-
-	// Set the namespace to the token's namespace only for the
-	// child token creation
-	tokenInfo, err := client.Auth().Token().LookupSelf()
-	if err != nil {
-		return nil, err
-	}
-	if tokenNamespaceRaw, ok := tokenInfo.Data["namespace_path"]; ok {
-		tokenNamespace := tokenNamespaceRaw.(string)
-		if tokenNamespace != "" {
-			client.SetNamespace(tokenNamespace)
+	createChild := d.Get("create_intermediate_child_token").(bool)
+	if createChild {
+		err := providerChildToken(d, client)
+		if err != nil {
+			return nil, err
 		}
 	}
-
-	renewable := false
-	childTokenLease, err := client.Auth().Token().Create(&api.TokenCreateRequest{
-		DisplayName:    tokenName,
-		TTL:            fmt.Sprintf("%ds", d.Get("max_lease_ttl_seconds").(int)),
-		ExplicitMaxTTL: fmt.Sprintf("%ds", d.Get("max_lease_ttl_seconds").(int)),
-		Renewable:      &renewable,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create limited child token: %s", err)
-	}
-
-	childToken := childTokenLease.Auth.ClientToken
-	policies := childTokenLease.Auth.Policies
-
-	log.Printf("[INFO] Using Vault token with the following policies: %s", strings.Join(policies, ", "))
-
-	// Set tht token to the generated child token
-	client.SetToken(childToken)
 
 	// Set the namespace to the requested namespace, if provided
 	namespace := d.Get("namespace").(string)
