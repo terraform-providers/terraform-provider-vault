@@ -57,19 +57,19 @@ The following arguments are supported:
 
 * `renewable` - (Optional) Flag to allow to renew this token
 
-* `ttl` - (Optional) The TTL period of this token
+* `ttl` - (Optional) The TTL period of this token. This is specified as a numeric string with suffix like "30s" ro "5m"
 
-* `explicit_max_ttl` - (Optional) The explicit max TTL of this token
+* `explicit_max_ttl` - (Optional) The explicit max TTL of this token. This is specified as a numeric string with suffix like "30s" ro "5m"
 
 * `display_name` - (Optional) String containing the token display name
 
 * `num_uses` - (Optional) The number of allowed uses of this token
 
-* `period` - (Optional) The period of this token
+* `period` - (Optional) The period of this token. This is specified as a numeric string with suffix like "30s" ro "5m"
 
 * `renew_min_lease` - (Optional) The minimal lease to renew this token
 
-* `renew_increment` - (Optional) The renew increment
+* `renew_increment` - (Optional) The renew increment. This is specified in seconds
 
 * `pgp_key` - (Optional) The PGP key with which the `client_token` will be encrypted.
    The key must be provided using either a base64 encoded non-armored PGP key, or a keybase
