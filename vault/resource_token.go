@@ -318,7 +318,15 @@ func tokenRead(d *schema.ResourceData, meta interface{}) error {
 
 	d.Set("policies", policies)
 	d.Set("no_parent", resp.Data["orphan"])
-	d.Set("renewable", resp.Data["renewable"])
+
+	// root tokens don't have the renewable key.
+	renewable := resp.Data["renewable"].(*bool)
+	if renewable != nil {
+		d.Set("renewable", *renewable)
+	} else {
+		d.Set("renewable", false)
+	}
+
 	d.Set("display_name", strings.TrimPrefix(resp.Data["display_name"].(string), "token-"))
 	d.Set("num_uses", resp.Data["num_uses"])
 	if _, ok := d.GetOk("pgp_key"); !ok {
@@ -341,14 +349,28 @@ func tokenRead(d *schema.ResourceData, meta interface{}) error {
 
 	expireTimeStr, ok := resp.Data["expire_time"].(string)
 	if !ok {
-		return fmt.Errorf("error expire_time is %T", resp.Data["expire_time"])
-	}
+		// A root token have a nil expire_time as well, but renewable is missing.
+		if renewable != nil {
+			log.Printf("[WARN] Token is expired, revoking and removing from state")
 
-	expireTime, err := time.Parse(time.RFC3339Nano, expireTimeStr)
-	if err != nil {
-		return fmt.Errorf("error parsing expire_time: %s", err)
+			err := client.Auth().Token().RevokeAccessor(id)
+			if err != nil {
+				log.Printf("[WARN] Token %s could not be revoked. %s", id, err)
+			}
+
+			d.SetId("")
+			return nil
+		}
+
+		d.Set("lease_duration", 0)
+	} else {
+		expireTime, err := time.Parse(time.RFC3339Nano, expireTimeStr)
+		if err != nil {
+			return fmt.Errorf("error parsing expire_time: %s", err)
+		}
+
+		d.Set("lease_duration", int(expireTime.Sub(issueTime).Seconds()))
 	}
-	d.Set("lease_duration", int(expireTime.Sub(issueTime).Seconds()))
 
 	if d.Get("renewable").(bool) && tokenCheckLease(d) {
 		if id == "" {
