@@ -44,7 +44,6 @@ func AuthBackendResource() *schema.Resource {
 
 			"description": {
 				Type:        schema.TypeString,
-				ForceNew:    true,
 				Optional:    true,
 				Description: "The description of the auth backend",
 			},
