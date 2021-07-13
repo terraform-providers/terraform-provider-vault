@@ -131,9 +131,9 @@ func identityEntityCreate(d *schema.ResourceData, meta interface{}) error {
 		}
 
 		return fmt.Errorf("Identity Entity %q already exists. %s", name, entityMsg)
+	} else {
+		log.Printf("[DEBUG] Wrote IdentityEntity %q", name)
 	}
-
-	log.Printf("[DEBUG] Wrote IdentityEntity %q", name)
 
 	d.SetId(resp.Data["id"].(string))
 

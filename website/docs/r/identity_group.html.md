@@ -67,3 +67,11 @@ The following arguments are supported:
 In addition to all arguments above, the following attributes are exported:
 
 * `id` - The `id` of the created group.
+
+## Import
+
+Identity group can be imported using the `id`, e.g.
+
+```
+$ terraform import vault_identity_group.test "fcbf1efb-2b69-4209-bed8-811e3475dad3"
+```
