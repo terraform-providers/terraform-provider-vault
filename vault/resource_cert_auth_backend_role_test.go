@@ -208,19 +208,20 @@ func testCertAuthBackendCheck_attrs(backend, name string) resource.TestCheckFunc
 		}
 
 		attrs := map[string]string{
-			"name":                       "display_name",
-			"allowed_names":              "allowed_names",
-			"allowed_dns_sans":           "allowed_dns_sans",
-			"allowed_email_sans":         "allowed_email_sans",
-			"allowed_uri_sans":           "allowed_uri_sans",
-			"allowed_organization_units": "allowed_organization_units",
-			"required_extensions":        "required_extensions",
-			"token_period":               "token_period",
-			"token_policies":             "token_policies",
-			"certificate":                "certificate",
-			"token_ttl":                  "token_ttl",
-			"token_max_ttl":              "token_max_ttl",
-			"token_bound_cidrs":          "token_bound_cidrs",
+			"name":                         "display_name",
+			"allowed_names":                "allowed_names",
+			"allowed_dns_sans":             "allowed_dns_sans",
+			"allowed_email_sans":           "allowed_email_sans",
+			"allowed_uri_sans":             "allowed_uri_sans",
+			"allowed_organization_units":   "allowed_organization_units",
+			"allowed_organizational_units": "allowed_organizational_units",
+			"required_extensions":          "required_extensions",
+			"token_period":                 "token_period",
+			"token_policies":               "token_policies",
+			"certificate":                  "certificate",
+			"token_ttl":                    "token_ttl",
+			"token_max_ttl":                "token_max_ttl",
+			"token_bound_cidrs":            "token_bound_cidrs",
 		}
 
 		for stateAttr, apiAttr := range attrs {

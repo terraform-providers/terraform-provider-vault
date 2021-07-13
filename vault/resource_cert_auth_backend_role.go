@@ -62,13 +62,14 @@ func certAuthBackendRoleResource() *schema.Resource {
 			Optional: true,
 			Computed: true,
 		},
-		"allowed_organization_units": {
+		"allowed_organizational_units": {
 			Type: schema.TypeSet,
 			Elem: &schema.Schema{
 				Type: schema.TypeString,
 			},
-			Optional: true,
-			Computed: true,
+			Optional:      true,
+			Computed:      true,
+			ConflictsWith: []string{"allowed_organization_units"},
 		},
 		"required_extensions": {
 			Type: schema.TypeSet,
@@ -94,6 +95,16 @@ func certAuthBackendRoleResource() *schema.Resource {
 		},
 
 		// Deprecated
+		"allowed_organization_units": {
+			Type: schema.TypeSet,
+			Elem: &schema.Schema{
+				Type: schema.TypeString,
+			},
+			Optional:      true,
+			Computed:      true,
+			ConflictsWith: []string{"allowed_organizational_units"},
+			Deprecated:    "use `allowed_organizational_units` instead",
+		},
 		"bound_cidrs": {
 			Type: schema.TypeSet,
 			Elem: &schema.Schema{
@@ -192,6 +203,8 @@ func certAuthResourceWrite(d *schema.ResourceData, meta interface{}) error {
 
 	if v, ok := d.GetOk("allowed_organization_units"); ok {
 		data["allowed_organization_units"] = v.(*schema.Set).List()
+	} else if v, ok := d.GetOk("allowed_organizational_units"); ok {
+		data["allowed_organizational_units"] = v.(*schema.Set).List()
 	}
 
 	if v, ok := d.GetOk("required_extensions"); ok {
@@ -262,6 +275,8 @@ func certAuthResourceUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	if v, ok := d.GetOk("allowed_organization_units"); ok {
 		data["allowed_organization_units"] = v.(*schema.Set).List()
+	} else if v, ok := d.GetOk("allowed_organizational_units"); ok {
+		data["allowed_organizational_units"] = v.(*schema.Set).List()
 	}
 
 	if v, ok := d.GetOk("required_extensions"); ok {
@@ -387,6 +402,18 @@ func certAuthResourceRead(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 
+	// Check if the user is using the deprecated `organization_units`
+	if _, deprecated := d.GetOk("organization_units"); deprecated {
+		// Then we see if `organizational_units` was set and unset it
+		// Vault will still return `organization_units`
+		if _, ok := d.GetOk("organizational_units"); ok {
+			d.Set("organization_units", nil)
+		}
+
+		if v, ok := resp.Data["organization_units"]; ok {
+			d.Set("organization_units", v)
+		}
+	}
 	d.Set("certificate", resp.Data["certificate"])
 	d.Set("display_name", resp.Data["display_name"])
 
@@ -441,6 +468,17 @@ func certAuthResourceRead(d *schema.ResourceData, meta interface{}) error {
 				schema.HashString, resp.Data["allowed_organization_units"].([]interface{})))
 	} else {
 		d.Set("allowed_organization_units",
+			schema.NewSet(
+				schema.HashString, []interface{}{}))
+	}
+
+	// Vault sometimes returns these as null instead of an empty list.
+	if resp.Data["allowed_organizational_units"] != nil {
+		d.Set("allowed_organizational_units",
+			schema.NewSet(
+				schema.HashString, resp.Data["allowed_organizational_units"].([]interface{})))
+	} else {
+		d.Set("allowed_organizational_units",
 			schema.NewSet(
 				schema.HashString, []interface{}{}))
 	}
