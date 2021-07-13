@@ -262,6 +262,12 @@ func pkiSecretBackendCertDiff(d *schema.ResourceDiff, meta interface{}) error {
 		if err := d.SetNewComputed("private_key"); err != nil {
 			return err
 		}
+		if err := d.SetNewComputed("expiration"); err != nil {
+			return err
+		}
+		if err := d.SetNewComputed("serial_number"); err != nil {
+			return err
+		}
 		return nil
 	}
 
