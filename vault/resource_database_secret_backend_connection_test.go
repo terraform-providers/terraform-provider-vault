@@ -19,6 +19,8 @@ func TestAccDatabaseSecretBackendConnection_import(t *testing.T) {
 	if connURL == "" {
 		t.Skip("POSTGRES_URL not set")
 	}
+	username := "postgres"
+	password := "postgres"
 	backend := acctest.RandomWithPrefix("tf-test-db")
 	name := acctest.RandomWithPrefix("db")
 	resource.Test(t, resource.TestCase{
@@ -27,7 +29,7 @@ func TestAccDatabaseSecretBackendConnection_import(t *testing.T) {
 		CheckDestroy: testAccDatabaseSecretBackendConnectionCheckDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDatabaseSecretBackendConnectionConfig_postgresql(name, backend, connURL),
+				Config: testAccDatabaseSecretBackendConnectionConfig_postgresql(name, backend, connURL, username, password),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("vault_database_secret_backend_connection.test", "name", name),
 					resource.TestCheckResourceAttr("vault_database_secret_backend_connection.test", "backend", backend),
@@ -40,14 +42,15 @@ func TestAccDatabaseSecretBackendConnection_import(t *testing.T) {
 					resource.TestCheckResourceAttr("vault_database_secret_backend_connection.test", "postgresql.0.connection_url", connURL),
 					resource.TestCheckResourceAttr("vault_database_secret_backend_connection.test", "postgresql.0.max_open_connections", "2"),
 					resource.TestCheckResourceAttr("vault_database_secret_backend_connection.test", "postgresql.0.max_idle_connections", "0"),
-					resource.TestCheckResourceAttr("vault_database_secret_backend_connection.test", "postgresql.0.max_connection_lifetime", "0"),
+					resource.TestCheckResourceAttr("vault_database_secret_backend_connection.test", "postgresql.0.username", username),
+					resource.TestCheckResourceAttr("vault_database_secret_backend_connection.test", "postgresql.0.password", password),
 				),
 			},
 			{
 				ResourceName:            "vault_database_secret_backend_connection.test",
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"verify_connection", "postgresql.0.connection_url"},
+				ImportStateVerifyIgnore: []string{"verify_connection", "postgresql.0.connection_url", "postgresql.0.password"},
 			},
 		},
 	})
@@ -465,6 +468,8 @@ func TestAccDatabaseSecretBackendConnection_postgresql(t *testing.T) {
 	if connURL == "" {
 		t.Skip("POSTGRES_URL not set")
 	}
+	username := "postgres"
+	password := "postgres"
 	backend := acctest.RandomWithPrefix("tf-test-db")
 	name := acctest.RandomWithPrefix("db")
 	resource.Test(t, resource.TestCase{
@@ -473,7 +478,7 @@ func TestAccDatabaseSecretBackendConnection_postgresql(t *testing.T) {
 		CheckDestroy: testAccDatabaseSecretBackendConnectionCheckDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDatabaseSecretBackendConnectionConfig_postgresql(name, backend, connURL),
+				Config: testAccDatabaseSecretBackendConnectionConfig_postgresql(name, backend, connURL, username, password),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("vault_database_secret_backend_connection.test", "name", name),
 					resource.TestCheckResourceAttr("vault_database_secret_backend_connection.test", "backend", backend),
@@ -487,6 +492,8 @@ func TestAccDatabaseSecretBackendConnection_postgresql(t *testing.T) {
 					resource.TestCheckResourceAttr("vault_database_secret_backend_connection.test", "postgresql.0.max_open_connections", "2"),
 					resource.TestCheckResourceAttr("vault_database_secret_backend_connection.test", "postgresql.0.max_idle_connections", "0"),
 					resource.TestCheckResourceAttr("vault_database_secret_backend_connection.test", "postgresql.0.max_connection_lifetime", "0"),
+					resource.TestCheckResourceAttr("vault_database_secret_backend_connection.test", "postgresql.0.username", username),
+					resource.TestCheckResourceAttr("vault_database_secret_backend_connection.test", "postgresql.0.password", password),
 				),
 			},
 		},
@@ -808,7 +815,7 @@ resource "vault_database_secret_backend_connection" "test" {
 `, path, name, connURL)
 }
 
-func testAccDatabaseSecretBackendConnectionConfig_postgresql(name, path, connURL string) string {
+func testAccDatabaseSecretBackendConnectionConfig_postgresql(name, path, connURL, username, password string) string {
 	return fmt.Sprintf(`
 resource "vault_mount" "db" {
   path = "%s"
@@ -823,9 +830,11 @@ resource "vault_database_secret_backend_connection" "test" {
 
   postgresql {
 	  connection_url = "%s"
+	  username = "%s"
+	  password = "%s"
   }
 }
-`, path, name, connURL)
+`, path, name, connURL, username, password)
 }
 
 func newMySQLConnection(t *testing.T, connURL string, username string, password string) *sql.DB {
