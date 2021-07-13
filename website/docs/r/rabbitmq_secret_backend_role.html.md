@@ -32,7 +32,12 @@ resource "vault_rabbitmq_secret_backend_role" "role" {
   name    = "deploy"
 
   tags = "tag1,tag2"
-  vhosts = "{\"/\": {\"configure\":\".*\", \"write\":\".*\", \"read\": \".*\"}}"
+  vhost {
+    host = "*"
+    read = ".*"
+    write = ".*"
+    configure =  ".*"
+  }
 }
 ```
 
