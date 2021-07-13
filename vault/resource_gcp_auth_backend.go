@@ -20,7 +20,9 @@ func gcpAuthBackendResource() *schema.Resource {
 		Read:   gcpAuthBackendRead,
 		Delete: gcpAuthBackendDelete,
 		Exists: gcpAuthBackendExists,
-
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 		Schema: map[string]*schema.Schema{
 			"credentials": {
 				Type:         schema.TypeString,
@@ -175,6 +177,7 @@ func gcpAuthBackendRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("project_id", resp.Data["project_id"])
 	d.Set("client_email", resp.Data["client_email"])
 	d.Set("local", resp.Data["local"])
+	d.Set("path", d.Id())
 	return nil
 }
 

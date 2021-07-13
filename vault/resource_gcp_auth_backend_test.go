@@ -38,6 +38,45 @@ func TestGCPAuthBackend_basic(t *testing.T) {
 	})
 }
 
+func TestGCPAuthBackend_import(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		Providers:    testProviders,
+		PreCheck:     func() { testAccPreCheck(t) },
+		CheckDestroy: testGCPAuthBackendDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testGCPAuthBackendConfig_import(gcpJSONCredentials, "gcp"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("vault_gcp_auth_backend.test", "path", "gcp"),
+				),
+			},
+			{
+				ResourceName:      "vault_gcp_auth_backend.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func testGCPAuthBackendImport(s *terraform.State) error {
+	client := testProvider.Meta().(*api.Client)
+
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "vault_gcp_auth_backend" {
+			continue
+		}
+		secret, err := client.Logical().Read(rs.Primary.ID)
+		if err != nil {
+			return fmt.Errorf("error checking for gcp auth backend %q: %s", rs.Primary.ID, err)
+		}
+		if secret == nil {
+			return fmt.Errorf("gcp auth backend %q does not exist", rs.Primary.ID)
+		}
+	}
+	return nil
+}
+
 func testGCPAuthBackendDestroy(s *terraform.State) error {
 	client := testProvider.Meta().(*api.Client)
 
@@ -84,4 +123,18 @@ resource "vault_gcp_auth_backend" "test" {
 }
 `, credentials)
 
+}
+
+func testGCPAuthBackendConfig_import(credentials, path string) string {
+	return fmt.Sprintf(`
+variable "json_credentials" {
+  type = "string"
+  default = %q
+}
+
+resource "vault_gcp_auth_backend" "test" {
+  credentials                   = "${var.json_credentials}"
+  path                          = "%s"
+}
+`, credentials, path)
 }
