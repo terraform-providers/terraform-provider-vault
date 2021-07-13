@@ -42,3 +42,11 @@ and correct drift on `private_key`. Changing the values, however, _will_ overwri
 ## Attributes Reference
 
 No additional attributes are exposed by this resource.
+
+## Import
+
+SSH secret backend CAs can be imported using the `path`, e.g.
+
+```
+$ terraform import vault_ssh_secret_backend_ca.foo ssh
+```
