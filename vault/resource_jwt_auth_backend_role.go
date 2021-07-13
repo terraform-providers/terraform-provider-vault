@@ -345,8 +345,6 @@ func jwtAuthBackendRoleRead(d *schema.ResourceData, meta interface{}) error {
 		if err != nil {
 			return fmt.Errorf("error setting bound_audiences in state: %s", err)
 		}
-	} else {
-		d.Set("bound_audiences", make([]string, 0))
 	}
 
 	d.Set("user_claim", resp.Data["user_claim"].(string))
