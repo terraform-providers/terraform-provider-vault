@@ -95,6 +95,14 @@ The following arguments are supported:
   (credentials TTL are capped to `max_sts_ttl`). Valid only when `credential_type` is
   one of `assumed_role` or `federation_token`.
 
+* `user_path` - (Optional) The path for the user name. Valid only when 
+credential_type is `iam_user`. Default is `/`.
+
+* `permissions_boundary_arn` - (Optional) The ARN of the AWS Permissions 
+Boundary to attach to IAM users created in the role. Valid only when 
+credential_type is `iam_user`. If not specified, then no permissions boundary 
+policy will be attached.
+
 ## Attributes Reference
 
 No additional attributes are exported by this resource.
