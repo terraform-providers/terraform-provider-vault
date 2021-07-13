@@ -113,7 +113,7 @@ func genericSecretDataSourceRead(d *schema.ResourceData, meta interface{}) error
 
 	d.Set("lease_id", secret.LeaseID)
 	d.Set("lease_duration", secret.LeaseDuration)
-	d.Set("lease_start_time", time.Now().Format("RFC3339"))
+	d.Set("lease_start_time", time.Now().Format(time.RFC3339))
 	d.Set("lease_renewable", secret.Renewable)
 
 	return nil
