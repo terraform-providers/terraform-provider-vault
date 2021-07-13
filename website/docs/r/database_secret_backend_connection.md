@@ -114,6 +114,7 @@ Exactly one of the nested blocks of configuration options must be supplied.
   docs](https://www.vaultproject.io/api-docs/secret/databases/mongodb.html#sample-payload)
   for an example.
 
+* `tls_ca` - (Optional) x509 CA file for validating the certificate presented by the MongoDB server. Must be PEM encoded.
 
 ### MongoDB Atlas Configuration Options
 
@@ -122,7 +123,6 @@ Exactly one of the nested blocks of configuration options must be supplied.
 * `private_key` - (Required) The Private Programmatic API Key used to connect with MongoDB Atlas API.
 
 * `project_id` - (Required) The Project ID the Database User should be created within.
-
 
 ### SAP HanaDB Configuration Options
 

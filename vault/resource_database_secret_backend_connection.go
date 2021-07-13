@@ -171,7 +171,7 @@ func databaseSecretBackendConnectionResource() *schema.Resource {
 				Type:          schema.TypeList,
 				Optional:      true,
 				Description:   "Connection parameters for the mongodb-database-plugin plugin.",
-				Elem:          connectionStringResource(),
+				Elem:          mongoDbConnectionStringResource(),
 				MaxItems:      1,
 				ConflictsWith: util.CalculateConflictsWith("mongodb", dbBackendTypes),
 			},
@@ -315,6 +315,16 @@ func connectionStringResource() *schema.Resource {
 	}
 }
 
+func mongoDbConnectionStringResource() *schema.Resource {
+	r := connectionStringResource()
+	r.Schema["tls_ca"] = &schema.Schema{
+		Type:        schema.TypeString,
+		Optional:    true,
+		Description: "x509 CA file for validating the certificate presented by the MongoDB server. Must be PEM encoded.",
+	}
+	return r
+}
+
 func getDatabasePluginName(d *schema.ResourceData) (string, error) {
 	switch {
 	case len(d.Get("cassandra").([]interface{})) > 0:
@@ -398,7 +408,7 @@ func getDatabaseAPIData(d *schema.ResourceData) (map[string]interface{}, error) 
 	case "hana-database-plugin":
 		setDatabaseConnectionData(d, "hana.0.", data)
 	case "mongodb-database-plugin":
-		setDatabaseConnectionData(d, "mongodb.0.", data)
+		setMongoDbDatabaseConnectionData(d, "mongodb.0.", data)
 	case "mongodbatlas-database-plugin":
 		if v, ok := d.GetOk("mongodbatlas.0.public_key"); ok {
 			data["public_key"] = v.(string)
@@ -471,6 +481,54 @@ func getConnectionDetailsFromResponse(d *schema.ResourceData, prefix string, res
 	return []map[string]interface{}{result}
 }
 
+func getMongoDbConnectionDetailsFromResponse(d *schema.ResourceData, prefix string, resp *api.Secret) []map[string]interface{} {
+	details := resp.Data["connection_details"]
+	data, ok := details.(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	result := map[string]interface{}{}
+	if v, ok := d.GetOk(prefix + "connection_url"); ok {
+		result["connection_url"] = v.(string)
+	} else {
+		if v, ok := data["connection_url"]; ok {
+			result["connection_url"] = v.(string)
+		}
+	}
+	if v, ok := data["max_open_connections"]; ok {
+		n, err := v.(json.Number).Int64()
+		if err != nil {
+			log.Printf("[WARN] Non-number %s returned from Vault server: %s", v, err)
+		} else {
+			result["max_open_connections"] = n
+		}
+	}
+	if v, ok := data["max_idle_connections"]; ok {
+		n, err := v.(json.Number).Int64()
+		if err != nil {
+			log.Printf("[WARN] Non-number %s returned from Vault server: %s", v, err)
+		} else {
+			result["max_idle_connections"] = n
+		}
+	}
+	if v, ok := data["max_connection_lifetime"]; ok {
+		n, err := time.ParseDuration(v.(string))
+		if err != nil {
+			log.Printf("[WARN] Non-number %s returned from Vault server: %s", v, err)
+		} else {
+			result["max_connection_lifetime"] = n.Seconds()
+		}
+	}
+	if v, ok := d.GetOk(prefix + "tls_ca"); ok {
+		result["tls_ca"] = v.(string)
+	} else {
+		if v, ok := data["tls_ca"]; ok {
+			result["tls_ca"] = v.(string)
+		}
+	}
+	return []map[string]interface{}{result}
+}
+
 func getElasticsearchConnectionDetailsFromResponse(d *schema.ResourceData, prefix string, resp *api.Secret) []map[string]interface{} {
 	details := resp.Data["connection_details"]
 	data, ok := details.(map[string]interface{})
@@ -511,6 +569,13 @@ func setDatabaseConnectionData(d *schema.ResourceData, prefix string, data map[s
 	}
 	if v, ok := d.GetOkExists(prefix + "max_connection_lifetime"); ok {
 		data["max_connection_lifetime"] = fmt.Sprintf("%ds", v)
+	}
+}
+
+func setMongoDbDatabaseConnectionData(d *schema.ResourceData, prefix string, data map[string]interface{}) {
+	setDatabaseConnectionData(d, prefix, data)
+	if v, ok := d.GetOkExists(prefix + "tls_ca"); ok {
+		data["tls_ca"] = v.(string)
 	}
 }
 
@@ -663,7 +728,7 @@ func databaseSecretBackendConnectionRead(d *schema.ResourceData, meta interface{
 	case "hana-database-plugin":
 		d.Set("hana", getConnectionDetailsFromResponse(d, "hana.0.", resp))
 	case "mongodb-database-plugin":
-		d.Set("mongodb", getConnectionDetailsFromResponse(d, "mongodb.0.", resp))
+		d.Set("mongodb", getMongoDbConnectionDetailsFromResponse(d, "mongodb.0.", resp))
 	case "mongodbatlas-database-plugin":
 		details := resp.Data["connection_details"]
 		data, ok := details.(map[string]interface{})
