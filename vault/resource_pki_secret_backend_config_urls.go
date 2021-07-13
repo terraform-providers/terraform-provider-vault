@@ -15,6 +15,11 @@ func pkiSecretBackendConfigUrlsResource() *schema.Resource {
 		Read:   pkiSecretBackendConfigUrlsRead,
 		Update: pkiSecretBackendConfigUrlsUpdate,
 		Delete: pkiSecretBackendConfigUrlsDelete,
+		Exists: pkiSecretBackendConfigUrlsExists,
+
+		Importer: &schema.ResourceImporter{
+			State: resourcePkiSecretBackendConfigUrlsImport,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"backend": {
@@ -128,6 +133,35 @@ func pkiSecretBackendConfigUrlsUpdate(d *schema.ResourceData, meta interface{}) 
 
 func pkiSecretBackendConfigUrlsDelete(d *schema.ResourceData, meta interface{}) error {
 	return nil
+}
+
+func pkiSecretBackendConfigUrlsExists(d *schema.ResourceData, meta interface{}) (bool, error) {
+	client := meta.(*api.Client)
+
+	path := d.Id()
+	log.Printf("[DEBUG] Checking if config urls %q exists", path)
+	config_urls, err := client.Logical().Read(path)
+	if err != nil {
+		return true, fmt.Errorf("error checking if config urls %q exists: %s", path, err)
+	}
+	if config_urls == nil {
+		return true, fmt.Errorf("config urls %q could not be found", path)
+	}
+
+	log.Printf("[DEBUG] Checked if config urls %q exists", path)
+	return config_urls != nil, nil
+}
+
+func resourcePkiSecretBackendConfigUrlsImport(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
+	// The import command takes only the backend name, since the actual path is always suffixed with /config/urls
+	pki_secret_backend_name := d.Id()
+	config_urls_path := pkiSecretBackendConfigUrlsPath(pki_secret_backend_name)
+
+	// Update the backend and the id attributes accordingly
+	d.Set("backend", pki_secret_backend_name)
+	d.SetId(config_urls_path)
+
+	return []*schema.ResourceData{d}, nil
 }
 
 func pkiSecretBackendConfigUrlsPath(backend string) string {

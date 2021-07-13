@@ -40,3 +40,11 @@ The following arguments are supported:
 ## Attributes Reference
 
 No additional attributes are exported by this resource.
+
+## Import
+
+PKI secret backend config urls can be imported using the pki secret backend name itself, e.g.
+
+```
+$ terraform import vault_pki_secret_backend_config_urls.pki pki
+```
