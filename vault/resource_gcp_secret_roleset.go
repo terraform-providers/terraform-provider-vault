@@ -235,7 +235,7 @@ func gcpSecretRolesetFlattenBinding(v interface{}) interface{} {
 		return v
 	}
 
-	rawBindings := v.((map[string]interface{}))
+	rawBindings := v.(map[string]interface{})
 	transformed := schema.NewSet(gcpSecretRolesetBindingHash, []interface{}{})
 	for resource, roles := range rawBindings {
 		transformed.Add(map[string]interface{}{

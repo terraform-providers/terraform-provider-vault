@@ -257,7 +257,7 @@ func testPkiSecretBackendCertWaitUntilRenewal(n string) resource.TestCheckFunc {
 			return fmt.Errorf("Invalid min_seconds_remaining value: %s", err)
 		}
 
-		secondsUntilRenewal := (expiration - (int(time.Now().Unix()) + minSecondsRemain))
+		secondsUntilRenewal := expiration - (int(time.Now().Unix()) + minSecondsRemain)
 		time.Sleep(time.Duration(secondsUntilRenewal+1) * time.Second)
 
 		return nil
