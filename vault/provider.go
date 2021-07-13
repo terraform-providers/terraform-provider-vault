@@ -252,6 +252,10 @@ var (
 			Resource:      genericSecretDataSource(),
 			PathInventory: []string{"/secret/data/{path}"},
 		},
+		"vault_key_list": {
+			PathInventory: []string{"/secret/data/{path}/"},
+			Resource:      genericKeyListDataSource(),
+		},
 		"vault_policy_document": {
 			Resource:      policyDocumentDataSource(),
 			PathInventory: []string{"/sys/policy/{name}"},
