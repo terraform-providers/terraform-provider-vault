@@ -54,6 +54,11 @@ func ldapAuthBackendResource() *schema.Resource {
 			Computed:  true,
 			Sensitive: true,
 		},
+		"case_sensitive_names": {
+			Type:     schema.TypeBool,
+			Optional: true,
+			Computed: true,
+		},
 		"userdn": {
 			Type:     schema.TypeString,
 			Optional: true,
@@ -215,6 +220,10 @@ func ldapAuthBackendUpdate(d *schema.ResourceData, meta interface{}) error {
 		data["bindpass"] = v.(string)
 	}
 
+	if v, ok := d.GetOk("case_sensitive_names"); ok {
+		data["case_sensitive_names"] = v.(bool)
+	}
+	
 	if v, ok := d.GetOk("userdn"); ok {
 		data["userdn"] = v.(string)
 	}
@@ -318,6 +327,7 @@ func ldapAuthBackendRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("insecure_tls", resp.Data["insecure_tls"])
 	d.Set("certificate", resp.Data["certificate"])
 	d.Set("binddn", resp.Data["binddn"])
+	d.Set("case_sensitive_names", resp.Data["case_sensitive_names"])
 	d.Set("userdn", resp.Data["userdn"])
 	d.Set("userattr", resp.Data["userattr"])
 	d.Set("discoverdn", resp.Data["discoverdn"])
