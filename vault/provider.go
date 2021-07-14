@@ -427,6 +427,10 @@ var (
 			Resource:      gcpSecretRolesetResource(),
 			PathInventory: []string{"/gcp/roleset/{name}"},
 		},
+		"vault_gcp_secret_static_account": {
+			Resource:      gcpSecretStaticAccountResource(),
+			PathInventory: []string{"/gcp/static/{name}"},
+		},
 		"vault_cert_auth_backend_role": {
 			Resource:      certAuthBackendRoleResource(),
 			PathInventory: []string{"/auth/cert/certs/{name}"},

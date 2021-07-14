@@ -19,4 +19,5 @@ require (
 	github.com/hashicorp/vault/sdk v0.1.14-0.20210526173046-412db2245e81
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/rainycape/unidecode v0.0.0-20150907023854-cb7f23ec59be // indirect
+	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 )

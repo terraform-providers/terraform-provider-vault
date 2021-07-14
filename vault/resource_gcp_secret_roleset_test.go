@@ -57,10 +57,10 @@ func TestGCPSecretRoleset(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            "vault_gcp_secret_backend.test",
+				ResourceName:            "vault_gcp_secret_roleset.test",
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"credentials"},
+				ImportStateVerifyIgnore: []string{},
 			},
 			{
 				Config: updatedConfig,
@@ -218,9 +218,9 @@ func testGCPSecretRoleset_attrs(backend, roleset string) resource.TestCheckFunc 
 			return fmt.Errorf("expected %s to have %d entries in state, has %d", "binding", remoteLength, localBindingsLength)
 		}
 
-		flattenedBindings := gcpSecretRolesetFlattenBinding(remoteBindings).(*schema.Set)
+		flattenedBindings := gcpSecretFlattenBinding(remoteBindings).(*schema.Set)
 		for _, remoteBinding := range flattenedBindings.List() {
-			bindingHash := strconv.Itoa(gcpSecretRolesetBindingHash(remoteBinding))
+			bindingHash := strconv.Itoa(gcpSecretBindingHash(remoteBinding))
 
 			remoteResource := remoteBinding.(map[string]interface{})["resource"].(string)
 			localResource := instanceState.Attributes["binding."+bindingHash+".resource"]
@@ -336,7 +336,7 @@ resource "vault_gcp_secret_roleset" "test" {
 	binding["resource"] = resource
 	binding["roles"] = schema.NewSet(schema.HashString, roles)
 
-	return terraform, gcpSecretRolesetBindingHash(binding)
+	return terraform, gcpSecretBindingHash(binding)
 }
 
 func testGCPSecretRoleset_service_account_key(backend, roleset, credentials, project, role string) (string, int) {
@@ -369,5 +369,5 @@ resource "vault_gcp_secret_roleset" "test" {
 	binding["resource"] = resource
 	binding["roles"] = schema.NewSet(schema.HashString, roles)
 
-	return terraform, gcpSecretRolesetBindingHash(binding)
+	return terraform, gcpSecretBindingHash(binding)
 }

@@ -1,15 +1,12 @@
 package vault
 
 import (
-	"bytes"
 	"fmt"
 	"log"
 	"regexp"
-	"sort"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/customdiff"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/vault/api"
 )
@@ -18,11 +15,6 @@ var (
 	gcpSecretRolesetBackendFromPathRegex = regexp.MustCompile("^(.+)/roleset/.+$")
 	gcpSecretRolesetNameFromPathRegex    = regexp.MustCompile("^.+/roleset/(.+)$")
 )
-
-type Binding struct {
-	Resource string
-	Roles    []string
-}
 
 func gcpSecretRolesetResource() *schema.Resource {
 	return &schema.Resource{
@@ -76,7 +68,7 @@ func gcpSecretRolesetResource() *schema.Resource {
 			"binding": {
 				Type:     schema.TypeSet,
 				Required: true,
-				Set:      gcpSecretRolesetBindingHash,
+				Set:      gcpSecretBindingHash,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"resource": {
@@ -107,8 +99,8 @@ func gcpSecretRolesetResource() *schema.Resource {
 			// Due to https://github.com/hashicorp/terraform/issues/17411
 			// we cannot use d.HasChange("binding") directly
 			oldBinding, newBinding := d.GetChange("binding")
-			oldHcl := renderBindingsFromData(oldBinding)
-			newHcl := renderBindingsFromData(newBinding)
+			oldHcl := gcpSecretRenderBindingsFromData(oldBinding)
+			newHcl := gcpSecretRenderBindingsFromData(newBinding)
 
 			return d.HasChange("token_scopes") || oldHcl != newHcl
 		}),
@@ -191,7 +183,7 @@ func gcpSecretRolesetRead(d *schema.ResourceData, meta interface{}) error {
 		return fmt.Errorf("error reading %s for GCP Secrets backend roleset %q", "project", path)
 	}
 
-	if err := d.Set("binding", gcpSecretRolesetFlattenBinding(resp.Data["bindings"])); err != nil {
+	if err := d.Set("binding", gcpSecretFlattenBinding(resp.Data["bindings"])); err != nil {
 		return fmt.Errorf("error reading %s for GCP Secrets backend roleset %q", "binding", path)
 	}
 
@@ -230,23 +222,6 @@ func gcpSecretRolesetDelete(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
-func gcpSecretRolesetFlattenBinding(v interface{}) interface{} {
-	if v == nil {
-		return v
-	}
-
-	rawBindings := v.((map[string]interface{}))
-	transformed := schema.NewSet(gcpSecretRolesetBindingHash, []interface{}{})
-	for resource, roles := range rawBindings {
-		transformed.Add(map[string]interface{}{
-			"resource": resource,
-			"roles":    schema.NewSet(schema.HashString, roles.([]interface{})),
-		})
-	}
-
-	return transformed
-}
-
 func gcpSecretRolesetUpdateFields(d *schema.ResourceData, data map[string]interface{}) {
 	if v, ok := d.GetOk("secret_type"); ok {
 		data["secret_type"] = v.(string)
@@ -261,7 +236,7 @@ func gcpSecretRolesetUpdateFields(d *schema.ResourceData, data map[string]interf
 	}
 
 	if v, ok := d.GetOk("binding"); ok {
-		bindingsHCL := renderBindingsFromData(v)
+		bindingsHCL := gcpSecretRenderBindingsFromData(v)
 		log.Printf("[DEBUG] Rendered GCP Secrets backend roleset bindings HCL:\n%s", bindingsHCL)
 		data["bindings"] = bindingsHCL
 	}
@@ -277,28 +252,6 @@ func gcpSecretRolesetExists(d *schema.ResourceData, meta interface{}) (bool, err
 	}
 	log.Printf("[DEBUG] Checked if %q exists", path)
 	return secret != nil, nil
-}
-
-func gcpSecretRolesetBindingHash(v interface{}) int {
-	var buf bytes.Buffer
-	m := v.(map[string]interface{})
-	buf.WriteString(fmt.Sprintf("%s-", m["resource"].(string)))
-
-	// We need to make sure to sort the strings below so that we always
-	// generate the same hash code no matter what is in the set.
-	if v, ok := m["roles"]; ok {
-		vs := v.(*schema.Set).List()
-		s := make([]string, len(vs))
-		for i, raw := range vs {
-			s[i] = raw.(string)
-		}
-		sort.Strings(s)
-
-		for _, v := range s {
-			buf.WriteString(fmt.Sprintf("%s-", v))
-		}
-	}
-	return hashcode.String(buf.String())
 }
 
 func gcpSecretRolesetPath(backend, roleset string) string {
@@ -325,46 +278,4 @@ func gcpSecretRoleSetdRolesetNameFromPath(path string) (string, error) {
 		return "", fmt.Errorf("unexpected number of matches (%d) for role", len(res))
 	}
 	return res[1], nil
-}
-
-func renderBinding(binding *Binding) string {
-	output := fmt.Sprintf("resource \"%s\" {\n", binding.Resource)
-	output = fmt.Sprintf("%s  roles = %s\n", output, policyRenderListOfStrings(binding.Roles))
-	return fmt.Sprintf("%s}\n", output)
-}
-
-func renderBindings(bindings []*Binding) string {
-	var output string
-
-	for i, binding := range bindings {
-		if i == 0 {
-			output = fmt.Sprintf("%s", renderBinding(binding))
-		} else {
-			output = fmt.Sprintf("%s\n\n%s", output, renderBinding(binding))
-		}
-	}
-
-	return output
-}
-
-func renderBindingsFromData(v interface{}) string {
-	rawBindings := v.(*schema.Set).List()
-
-	bindings := make([]*Binding, len(rawBindings))
-
-	for i, binding := range rawBindings {
-		rawRoles := binding.(map[string]interface{})["roles"].(*schema.Set).List()
-		roles := make([]string, len(rawRoles))
-		for j, role := range rawRoles {
-			roles[j] = role.(string)
-		}
-
-		binding := &Binding{
-			Resource: binding.(map[string]interface{})["resource"].(string),
-			Roles:    roles,
-		}
-		bindings[i] = binding
-	}
-
-	return renderBindings(bindings)
 }

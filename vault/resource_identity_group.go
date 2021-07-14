@@ -140,7 +140,6 @@ func identityGroupUpdateFields(d *schema.ResourceData, data map[string]interface
 			data["member_entity_ids"] = d.Get("member_entity_ids").(*schema.Set).List()
 			data["member_group_ids"] = d.Get("member_group_ids").(*schema.Set).List()
 
-
 			// Edge case where if external_policies is true, no policies
 			// should be configured on the entity.
 			data["external_policies"] = d.Get("external_policies").(bool)
